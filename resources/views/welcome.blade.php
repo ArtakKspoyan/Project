@@ -4,7 +4,7 @@
         <meta charset="utf-8">
         <meta name="viewport" content="width=device-width, initial-scale=1">
 
-        <title>Full stack blog</title>
+        <title>My project</title>
         <link rel="stylesheet" href="/css/all.css  " >
         <script>
 
@@ -21,8 +21,14 @@
     </head>
     <body>
     <div id="app">
-    <mainapp></mainapp>    
-    </div>
+
+     @if(Auth::check()) 
+     <!-- <mainapp :user="{{ Auth::user()}} "  :permission="{{ Auth::user()->role->permission}}"></mainapp>   -->
+     <mainapp :user="{{ Auth::user()}} "  :permission="{{ Auth::user()->role->permission}}"></mainapp>  
+     @else
+     <mainapp :user="false"></mainapp>  
+     @endif   
+     </div>
 
     <script src="{{  mix('/js/app.js') }}"></script>
     </body>

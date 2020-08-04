@@ -4,7 +4,7 @@
 			<div class="container">
 				<!--~~~~~~~ TABLE ONE ~~~~~~~~~-->
 				<div class="_1adminOverveiw_table_recent _box_shadow _border_radious _mar_b30 _p20">
-					<p class="_title0">Category <Button @click="addModal = true"><Icon type="md-add" />Add category</Button></p>
+					<p class="_title0">Category <Button @click="addModal = true"  v-if="isWritePermitted"><Icon type="md-add" />Add category</Button></p>
 
 					<div class="_overflow _table_div">
 						<table class="_table">
@@ -28,8 +28,8 @@
 								<td class="_table_name">{{ category.categoryName }}</td>
 								<td>{{category.created_at}}</td>
 								<td>
-									<Button type="info" size="small" @click="showEditModal(category, i)">Edit</Button>
-									<Button type="error" size="small" @click="showDeletingModal(category, i)" :loading="category.isDeleting">Delete</Button>
+									<Button type="info" size="small" @click="showEditModal(category, i)" v-if="isUpdatePermitted">Edit</Button>
+									<Button type="error" size="small" @click="showDeletingModal(category, i)" :loading="category.isDeleting" v-if="isDeletePermitted">Delete</Button>
 								</td>
 							</tr>
 							
@@ -88,7 +88,7 @@
         >
 
 
-          <Input v-model="data.categoryName"  placeholder="Add category name" />
+          <Input v-model="editData.categoryName"  placeholder="Add category name" />
           <div class="space"></div>
           <Upload v-show="isIconImageNew"
               ref="editDataUploads"
@@ -121,25 +121,16 @@
 		</div>
     </Modal>
 
-		<!-- delete alert modal -->
-	<Modal v-model="showDeleteModal" width="360">
-        <p slot="header" style="color:#f60;text-align:center">
-            <Icon type="ios-information-circle"></Icon>
-            <span>Delete confirmation</span>
-        </p>
-        <div style="text-align:center">
-            <p>Are you sure you want delete this tag?</p>
-        </div>
-        <div slot="footer">
-            <Button type="error" size="large" long :loading="isDeleting" :disabled="isDeleting" @click="deleteTag">Delete</Button>
-        </div>
-    </Modal>
+			<deleteModal></deleteModal>
 			</div>
 		</div>
     </div>
 </template>
 
 <script>
+import deleteModal from '../components/deleteModal.vue'
+import {mapGetters} from 'vuex'
+
 export default {
 
 	data(){
@@ -174,7 +165,7 @@ export default {
 		async addCategory(){
 			if(this.data.categoryName.trim()=='') return this.e('Category name is required')
 			if(this.data.iconImage.trim()=='') return this.e('Icon image is required')
-			this.data.iconImage = `/uploads/${this.data.iconImage}`
+			this.data.iconImage = `${this.data.iconImage}`
 			const res = await this.callApi('post','app/create_category', this.data) 
 			if(res.status===201){
 				this.categoryLists.unshift(res.data)
@@ -203,11 +194,11 @@ export default {
 		},
 
 		async editCategory(){
-			if(this.data.categoryName.trim()=='') return this.e('Category name is required')
-			if(this.data.iconImage.trim()=='') return this.e('Icon image is required')
+			if(this.editData.categoryName.trim()=='') return this.e('Category name is required')
+			if(this.editData.iconImage.trim()=='') return this.e('Icon image is required')
 			const res = await this.callApi('post','app/edit_category', this.editData) 
 			if(res.status===200){
-				this.tags[this.index].tagName = this.editData.tagName
+				this.categoryLists[this.index].categoryName = this.editData.categoryName
 				this.s('Category has been edited sucsefully!')
 				this.editModal = false
 			}else{
@@ -240,23 +231,19 @@ export default {
 			
 		}, 
 
-		async deleteTag(){
-			this.isDeleting =true
-			const res = await this.callApi('post','app/delete_tag', this.deleteItem)
-			if(res.status===200){
-				this.tags.splice(this.deletingIndex, 1)
-				this.s('Tag has been deleted successfully!')
-			}else{
-				this.swr()
-			}
-			this.isDeleting =false
-			this.showDeleteModal = false
-
-		},
-		showDeletingModal(tag, i){
-			this.deleteItem = tag
-			this.deletingIndex = i
-			this.showDeleteModal = true
+		
+		showDeletingModal(category, i){
+		const deleteModalObj= {
+              showDeleteModal:true,
+              deleteUrl: 'app/delete_category',
+              data: category,
+              deletingIndex: i,
+              isDeleted: false
+			 }
+			  this.$store.commit('setDeletingModalObj', deleteModalObj)
+			// this.deleteItem = tag
+			// this.deletingIndex = i
+			// this.showDeleteModal = true
 			
         },
             handleSuccess (res, file) {
@@ -288,14 +275,16 @@ export default {
             },
               
             async deleteImage(isAdd=true){
+
+				let image
 				if(!isAdd){ //for editing...
 					  this.isIconImageNew= true
-					  let image = this.editData.iconImage
+					  image = this.editData.iconImage
 				      this.editData.iconImage = ''
 				      this.$refs.editDataUploads.clearFiles()
 
 				}else{
-					  let image = this.data.iconImage
+					  image = this.data.iconImage
 				      this.data.iconImage = ''
 				      this.$refs.uploads.clearFiles()
 				}
@@ -322,7 +311,22 @@ export default {
 		 }else{
 			 this.swr()
 		 } 
-	 }
+	 },
+
+	 components: {
+		 deleteModal
+	 },
+	  computed: {
+		 ...mapGetters(['getDeleteModalObj'])
+	 },
+	 
+	 watch: {
+		 getDeleteModalObj(obj){
+			 if(obj.isDeleted){
+				 this.categoryLists.splice(obj.deletingIndex, 1)
+			 }
+		 }
+	 } 
 
 }
 

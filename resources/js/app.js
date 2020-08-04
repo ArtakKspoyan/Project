@@ -4,13 +4,28 @@ require('./bootstrap');
 
 window.Vue = require('vue');
 import router from './router';
+import store from './store';
 import ViewUI from 'view-design';
-import 'view-design/dist/styles/iview.css';
-Vue.use(ViewUI);
+
+import 'view-design/dist/styles/iview.css'
+Vue.use(ViewUI)
+
+import common from './common'
+import jsonToHtml from './jsonToHtml'
+Vue.mixin(common)
+Vue.mixin(jsonToHtml)
+
+import Editor from 'vue-editor-js'
+Vue.use(Editor)
 
 
-import common from './common';
-Vue.mixin(common);
+window.translate=require('./VueTranslation/Translation').default.translate;
+Vue.prototype.translate=require('./VueTranslation/Translation').default.translate;
+
+
+
+
+
 
 /**
  * The following block of code may be used to automatically register your
@@ -25,9 +40,14 @@ Vue.mixin(common);
 
 // Vue.component('example-component', require('./components/ExampleComponent.vue').default);
 Vue.component('mainapp', require('./components/mainapp.vue').default);
+Vue.component('contact-form', require('./components/ContactForm.vue').default);
 
 
 const app = new Vue({
     el: '#app',
-    router
+    router,
+    store
+
 });
+
+
